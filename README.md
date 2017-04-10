@@ -76,13 +76,29 @@ If you found a trouble like this I would like to hear about it to try to fix tha
 
 If you need to apply/vary the correction factor **after** the setup process (like in a own calibration routine) you will get a click noise on the next setFreq() to apply the changes, so, if you do it repeatedly it will have click noise on it, that perfectly normal.
 
+## Installation ##
+
+Just go to the [Github repository page (this page)](https://github.com/pavelmc/Si5351mcu/) and click on the "Clone or Download" green button, select download and download it to your PC.
+
+The file name will be like this: Si5351mcu-master.zip, you must extract the files and put them in a folder called "Si5351mcu" inside your "Libraries" arduino folder.
+
+Restart your Arduino IDE software and that's all.
+
+## Assumptions ##
+
+This lib assume this facts:
+
+* The Si5351 is set to put a 8 pF across the XTAL.
+* The CLK outputs are set to full power (8 mA over 50 ohms)
+* At the moment the CLK2 will not be used.
+
 ## Author & contributors ##
 
 The only author is Pavel Milanes, CO7WT, reachable at pavelmc@gmail.com, contributors and sponsors are welcomed.
 
 ## Where to download the latest version? ##
 
-Always download the latest version from the [github repository](https://github.com/pavelmc/Si5351mcu/)
+Always download the latest version from the [Github repository](https://github.com/pavelmc/Si5351mcu/)
 
 ## If you like to give thanks... ##
 
