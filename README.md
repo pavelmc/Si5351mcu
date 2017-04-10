@@ -77,6 +77,12 @@ Always download the latest version from the [github repository](https://github.c
 
 No payment of whatsoever is required to use this code: this is [Free/Libre Software](https://en.wikipedia.org/wiki/Software_Libre), nevertheless donations are very welcomed.
 
-I live in Cuba island and the Internet is very expensive here, you can donate a few bucks anonymously via [Ding Topups](https://www.ding.com/cuba) to co7wt@nauta.com.cu (select Nauta account) to keep me connected.
+I live in Cuba island and the Internet/Cell is very expensive here (USD $1.50/hour), you can donate anonymously internet time or cell phone air time to me via [Ding Topups](https://www.ding.com/) to keep me connected and developing for the homebrew community.
+
+If you like to do so, please go to Ding, select Cuba, select Cubacell (for phone top up) or Nauta (for Internet time)
+
+For phone topup use this number (My cell, feel free to call me if you like): +53 538-478-19
+For internet time use this user: co7wt@nauta.com.cu (that's not an email but an user account name)
 
 Thanks before hand.
+
