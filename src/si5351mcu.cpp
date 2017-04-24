@@ -7,8 +7,8 @@
  * all GNU GPL licenced:
  *  - Linux Kernel (www.kernel.org)
  *  - Hans Summers libs and demo code (qrp-labs.com)
- *  - Etherkit Si5351 libs on github
- *  - DK7IH examples.
+ *  - Etherkit (NT7S) Si5351 libs on github
+ *  - DK7IH example.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,15 @@
 #include "Arduino.h"
 #include "Wire.h"
 #include "si5351mcu.h"
+
+/*****************************************************************************
+ * This is the custom init procedure, it's used to pass a custom xtal
+ *****************************************************************************/
+ void Si5351mcu::init(uint32_t nxtal) {
+    // set the new xtal freq
+    int_xtal = nxtal;
+}
+
 
 /*****************************************************************************
  * This function set the freq of the corresponding clock.
@@ -122,12 +131,12 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     }
 
     // default reset
-    if (!init) {
+    if (!inited) {
         // reset the PLLs and synths
         reset();
 
         // clear the flag
-        init = true;
+        inited = true;
     }
 }
 
@@ -146,35 +155,105 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
  * with +/- 5Hz of tolerance as an educated guess from my part.
  *
  * If you need super extra accuracy you must call it after each freq change,
+ * but it will carry on click noise...
+ * 
  * I think that +/- 3 Hz makes no difference in homebrew SSB equipment
+ *
+ * You can also implement a reset every X Khz/Mhz to be sure
  ****************************************************************************/
 void Si5351mcu::reset(void) {
-    // PLL & synths reset
+    // PLL resets
 
-    // This soft-resets PLL A & and enable it's output
+    // This soft-resets PLL A
     i2cWrite(177, 32);
-    i2cWrite(16, 79);
-
-    // This soft-resets PLL B & and enable it's output
+    // This soft-resets PLL B
     i2cWrite(177, 128);
-    i2cWrite(17, 111);
+}
+
+
+/*****************************************************************************
+ * Function to disable all outputs
+ *
+ * The PLL are kept running, just the m-synths are powered off.
+ *
+ * This allows to keep the chip warm and exactly on freq the next time you
+ * enable an output.
+ * 
+ ****************************************************************************/
+void Si5351mcu::off() {
+    // This disable all the CLK outputs
+    for (byte i=0; i<3; i++) disable(i);
 }
 
 
 /*****************************************************************************
  * Function to set the correction in Hz over the Si5351 XTAL.
  *
- * It's set but not applied, so you need to make a setFreq & reset after
- * changing the correction factor.
+ * This will call a reset of the PLLs and multi-synths so it will produce a
+ * click every time it's called
  *
- * You has been warned.
+ * You will get the correction applied in the next call o the setFreq()
+ * 
  ****************************************************************************/
-void Si5351mcu::correction(long diff) {
+void Si5351mcu::correction(int32_t diff) {
     // apply some corrections to the xtal
-    int_xtal = XTAL + diff;
+    int_xtal = SIXTAL + diff;
 
-    // unset the init flag to force a reset in the next setFreq()
-    init = false;
+    // reset the PLLs to apply the correction
+    reset();
+}
+
+
+/*****************************************************************************
+ * This function enables the selected output
+ * 
+ * ZERO is clock output enabled
+ *****************************************************************************/
+void Si5351mcu::enable(uint8_t clk) {
+    // selecting the registers depending on the clock
+    switch (clk) {
+        case 0:
+            // setting register 16 to the correct values
+            i2cWrite(16, SICLK0_R + clk0_power);
+            break;
+        case 1:
+            // setting register 17 to the correct values
+            i2cWrite(17, SICLK12_R + clk1_power);
+            // disable CLK2 as it's mutually exclusive with this
+            disable(2);
+            break;
+        case 2:
+            // setting register 18 to the correct values
+            i2cWrite(18, SICLK12_R + clk2_power);
+            // disable CLK1 as it's mutually exclusive with this
+            disable(1);
+            break;
+    }
+}
+
+
+/*****************************************************************************
+ * This function disables the selected output
+ * 
+ * ONE  is clock output disabled
+ * *****************************************************************************/
+void Si5351mcu::disable(uint8_t clk) {
+    // send
+    i2cWrite(16 + clk, 128);
+}
+
+
+/****************************************************************************
+ * Set the power output for each output independently
+ ***************************************************************************/
+void Si5351mcu::setPower(byte clk, byte power) {
+    // set the power to the correct var
+    if (clk == 0) clk0_power = power;
+    if (clk == 1) clk1_power = power;
+    if (clk == 2) clk2_power = power;
+
+    // now enable the output to get it applied
+    enable(clk);
 }
 
 

@@ -9,8 +9,8 @@
  * all GNU GPL licenced:
  *  - Linux Kernel (www.kernel.org)
  *  - Hans Summers libs and demo code (qrp-labs.com)
- *  - Etherkit Si5351 libs on github
- *  - DK7IH examples.
+ *  - Etherkit (NT7S) Si5351 libs on github
+ *  - DK7IH example.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,81 +29,128 @@
 
 /***************************************************************************
  * This example is meant to be monitored with an RTL-SDR receiver
- * but you can change the frequency and other vars to test with your hardware
+ * but you can change the frequency and other vars to test with your hardware.
  *
- * Take into account your XTAL error, see pll.correction(###) below
+ * Set your SDR software to monitor from 60 to 62 Mhz.
+ *
+ * This will set 60.0 Mhz in clock 0, put and alternating frequencies
+ * at 60.5 and 61.0 Mhz on CLK1 and CLK2 to show they are mutually exclusive.
+ *
+ * Then make a sweep from 60 to 62 Mhz on CLK2, with an stop every 200Khz
+ * and then a train of one second pulses will follow with varying power levels
+ *
+  * Take into account your XTAL error, see Si.correction(###) below
  *
  ***************************************************************************/
 
 #include "si5351mcu.h"
 #include "Wire.h"
 
-// lib instantiation as "pll"
-Si5351mcu pll;
+// lib instantiation as "Si"
+Si5351mcu Si;
 
 // Stop every X Mhz for Y seconds to measure
-#define EVERY       1000000   // stop every 1Mhz for...
-#define SECONDS       15000   // 15 seconds
+#define EVERY        200000   // stop every 200khz
+#define DANCE             3   // 3 seconds
 
 // some variables
-long freqStart =   26000000;  //  26.0 MHz
-long freqStop  =  150000000;  // 150.0 MHz
+long freqStart =   60000000;  //  60.0 MHz
+long freqStop  =   62000000;  //  62.0 MHz
 long step      =      10000;  //  10.0 kHz
 long freq      = freqStart;
-long newStop   = freq + EVERY;
 
 
 void setup() {
     // init the wire lib
     Wire.begin();
 
-    // apply my calculated correction factor
-    pll.correction(-1250);
+    // init the Si5351 lib
+    // this lib doesn't need an init function unless you need to pass a
+    // different xtal (from the default of 27.00000 Mhz)
+    // Si.init(26570000);
 
-    // set some freq
-    pll.setFreq(0, 25000000);       // CLK0 output
-    pll.setFreq(1, 145000000);      // CLK1 output
+    // set & apply my calculated correction factor
+    Si.correction(-1250);
 
-    // force the first reset
-    pll.reset();
+    // pre-load some sweet spot freqs
+    Si.setFreq(0, freqStart);
+    Si.setFreq(1, freqStart);
+    
+    // disable all outputs and reset the PLLs
+    Si.off();
+    Si.reset();
 
-    // 30 seconds delay for calibration
-    delay(30000);
+    // put a tone in the start freq on CLK0
+    Si.setFreq(0, freqStart);
+    Si.enable(0);
 
-    // serial welcome
-    Serial.begin(115200);
-    Serial.println("Test for Si5351 click-less lib optimized for MCU");
+    // make the dance on the two outputs
+    Si.setFreq(1, freqStart +  500000);      // CLK1 output
+    Si.enable(1);
+    delay(3000);
+    // Si.disable(1);   // no need to disable, enabling CLK2 disable this
+    
+    Si.setFreq(2, freqStart + 1000000);      // CLK2 output
+    Si.enable(2);
+    delay(3000);
+    //Si.disable(2);   // no need to disable, enabling CLK1 disable this
+    
+    Si.setFreq(1, freqStart +  500000);      // CLK1 output
+    Si.enable(1);
+    delay(3000);
+    //Si.disable(1);   // no need to disable, enabling CLK2 disable this
+    
+    Si.setFreq(2, freqStart + 1000000);      // CLK2 output
+    Si.enable(2);
+    delay(3000);
+    Si.disable(2);   // this is the last in the dance, disable it
+
+    // shut down CLK0
+    Si.disable(0);
+
+    // set CLK2 to the start freq
+    Si.setFreq(2, freqStart);   // it's disabled by now
 }
 
 
 void loop() {
     // check for the stop to measure
-    if (freq >= newStop) {
-        // yes it's time to measure
-        
-        // alert via serial
-        Serial.print("Frequency: ");
-        Serial.print(freq);
-        Serial.println(" Hz");
-        
-        // stop for this time to measure
-        delay(SECONDS);
+    if ((freq % EVERY) == 0) {
+        // it's time to flip-flop it 
 
-        // reset the flag
-        newStop = freq + EVERY;
+        for (byte i = 0; i < 4; i++) {
+            // power off the clk2 output
+            Si.disable(2);
+            delay(500);
+            // power mod, the lib define some macros for that:
+            // SIOUT_2mA, SIOUT_4mA, SIOUT_6mA and SIOUT_8mA
+            //
+            // But they are incidentally matching the 0 to 3 count..
+            // so I will use the cycle counter for that (i)
+            //
+            // moreover, setting the power on an output will enable it
+            // so I will explicit omit the enable here
+            Si.setPower(2,i);
+            //Si.enable(2);
+            delay(1000);
+        }
+
+        // reset the power to low
+        Si.setPower(2, SIOUT_2mA);
+
+        // set it for the new cycle
+        freq += step;
     } else {
-        // time to move
-
         // check if we are on the limits
         if (freq <= freqStop) {
             // no, set and increment
-            pll.setFreq(0,freq);        // but it can be with CLK1 instead
+            Si.setFreq(2,freq);        // but it can be with CLK0 or CLK1 instead
 
             // set it for the new cycle
             freq += step;
 
             // a short delay to slow things a little.
-            delay(10);
+            delay(50);
         } else {
             // we reached the limit, reset to start
             freq = freqStart;

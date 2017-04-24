@@ -7,8 +7,8 @@
  * all GNU GPL licenced:
  *  - Linux Kernel (www.kernel.org)
  *  - Hans Summers libs and demo code (qrp-labs.com)
- *  - Etherkit Si5351 libs on github
- *  - DK7IH examples.
+ *  - Etherkit (NT7S) Si5351 libs on github
+ *  - DK7IH example.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,17 +30,20 @@
  * 
  * CLK0 will use PLLA
  * CLK1 will use PLLB
- * CLK2 will not be used at all
+ * CLK2 will use PLLB
  *
- * XTAL is 27 Mhz, but you can set your particular xtal in the define below
+ * Lib defaults
+ * - XTAL is 27 Mhz.
+ * - Always put the internal 8pF across the xtal legs to GND
+ * - lowest power output (2mA)
+ * 
+ * The correction procedure is not for the PPM as other libs, this
+ * is just +/- Hz to the XTAL freq, you may get a click noise after
+ * applying a correction
  *
- * This lib put the 8pF across the xtal by default, and will set full power
- * on the output of the Si5351.
+ * This lib doesn't need an init if you use default values, but if you need
+ * to change the default xtal... then there is one to pass the custom xtal
  *
- * The correction procedure is not for the PPM as other libs, this is just
- * +/- Hz to the XTAL freq, and you must do a setFrequency() and reset()
- * after applying any correction.
- *  
  ****************************************************************************/
 
 #ifndef SI5351MCU_H
@@ -51,19 +54,64 @@
 #include "Wire.h"
 #include <stdint.h>
 
-// lib defines
-#define XTAL 27000000   // Xtal, 27.0 MHz
-#define SIADDR 0x60     // default I2C address of the Si5351
+// Xtal, 27.0 MHz
+#define SIXTAL 27000000
+
+// default I2C address of the Si5351
+#define SIADDR 0x60
+
+// register's power modifiers
+#define SIOUT_2mA 0
+#define SIOUT_4mA 1
+#define SIOUT_6mA 2
+#define SIOUT_8mA 3
+
+// registers base (2mA by default)
+#define SICLK0_R   76       // 0b1001100
+#define SICLK12_R 108       // 0b1101100
+
 
 class Si5351mcu {
     public:
+        // custom init procedure (XTAL in Hz);
+        void init(uint32_t);
+        
+        // reset all PLLs
         void reset(void);
+        
+        // set CLKx(0..2) to freq (Hz)
         void setFreq(uint8_t, uint32_t);
-        void correction(long);
+        
+        // pass a correction factor
+        void correction(int32_t);
+        
+        // enable some CLKx output
+        void enable(uint8_t);
+        
+        // disable some CLKx output
+        void disable(uint8_t);
+        
+        // disable all outputs
+        void off(void);
+
+        // set power output to a specific clk
+        void setPower(uint8_t, uint8_t);
+        
     private:
+        // used to talk with the chip, via Arduino Wire lib
         void i2cWrite(uint8_t, uint8_t);
-        uint32_t int_xtal = XTAL;
-        boolean init = false;
+        
+        // set an internal xtal reference, over this value will
+        // be applied the correction factor
+        uint32_t int_xtal = SIXTAL;
+        
+        // initialized state of the lib
+        boolean inited = false;
+
+        // clks power holders (2ma by default)
+        uint8_t clk0_power = 0;
+        uint8_t clk1_power = 0;
+        uint8_t clk2_power = 0;
 };
 
 
