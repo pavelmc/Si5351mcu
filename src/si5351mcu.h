@@ -27,7 +27,7 @@
 
 /****************************************************************************
  *  This lib tricks:
- * 
+ *
  * CLK0 will use PLLA
  * CLK1 will use PLLB
  * CLK2 will use PLLB
@@ -36,7 +36,7 @@
  * - XTAL is 27 Mhz.
  * - Always put the internal 8pF across the xtal legs to GND
  * - lowest power output (2mA)
- * 
+ *
  * The correction procedure is not for the PPM as other libs, this
  * is just +/- Hz to the XTAL freq, you may get a click noise after
  * applying a correction
@@ -52,10 +52,6 @@
 // rigor includes
 #include "Arduino.h"
 #include "Wire.h"
-#include <stdint.h>
-
-// Xtal, 27.0 MHz
-#define SIXTAL 27000000
 
 // default I2C address of the Si5351
 #define SIADDR 0x60
@@ -75,38 +71,39 @@ class Si5351mcu {
     public:
         // custom init procedure (XTAL in Hz);
         void init(uint32_t);
-        
+
         // reset all PLLs
         void reset(void);
-        
+
         // set CLKx(0..2) to freq (Hz)
         void setFreq(uint8_t, uint32_t);
-        
+
         // pass a correction factor
         void correction(int32_t);
-        
+
         // enable some CLKx output
         void enable(uint8_t);
-        
+
         // disable some CLKx output
         void disable(uint8_t);
-        
+
         // disable all outputs
         void off(void);
 
         // set power output to a specific clk
         void setPower(uint8_t, uint8_t);
-        
+
     private:
         // used to talk with the chip, via Arduino Wire lib
         void i2cWrite(uint8_t, uint8_t);
-        
-        // set an internal xtal reference, over this value will
-        // be applied the correction factor
-        uint32_t int_xtal = SIXTAL;
-        
-        // initialized state of the lib
-        boolean inited = false;
+
+        // base xtal freq, over this we apply the correction factor
+        // by default 27 MHz
+        uint32_t base_xtal = 27000000L;
+
+        // this is the work value, with the correction applied
+        // via the correction() procedure
+        uint32_t int_xtal = base_xtal;
 
         // clks power holders (2ma by default)
         uint8_t clk0_power = 0;

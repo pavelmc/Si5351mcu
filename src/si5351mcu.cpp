@@ -42,7 +42,7 @@
  *
  * In my tests my Si5351 can work between 7,8 Khz and ~225 Mhz, as usual YMMV
  ****************************************************************************/
-void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) { 
+void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     #define c 1048574;
     unsigned long fvco;
     unsigned long outdivider;
@@ -93,7 +93,7 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     f = 128 * b / c;
     MSNx_P1 = 128 * a + f - 512;
     MSNx_P2 = f;
-    MSNx_P2 = 128 * b - MSNx_P2 * c; 
+    MSNx_P2 = 128 * b - MSNx_P2 * c;
     MSNx_P3 = c;
 
     if (clk > 0 ) shifts = 8;
@@ -129,15 +129,6 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
         i2cWrite(45, 0);            // Bits [15:8] of MSx_P1 must be 0
         i2cWrite(46, 0);            // Bits [7:0] of MSx_P1 must be 0
     }
-
-    // default reset
-    if (!inited) {
-        // reset the PLLs and synths
-        reset();
-
-        // clear the flag
-        inited = true;
-    }
 }
 
 
@@ -156,7 +147,7 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
  *
  * If you need super extra accuracy you must call it after each freq change,
  * but it will carry on click noise...
- * 
+ *
  * I think that +/- 3 Hz makes no difference in homebrew SSB equipment
  *
  * You can also implement a reset every X Khz/Mhz to be sure
@@ -178,7 +169,7 @@ void Si5351mcu::reset(void) {
  *
  * This allows to keep the chip warm and exactly on freq the next time you
  * enable an output.
- * 
+ *
  ****************************************************************************/
 void Si5351mcu::off() {
     // This disable all the CLK outputs
@@ -193,11 +184,11 @@ void Si5351mcu::off() {
  * click every time it's called
  *
  * You will get the correction applied in the next call o the setFreq()
- * 
+ *
  ****************************************************************************/
 void Si5351mcu::correction(int32_t diff) {
     // apply some corrections to the xtal
-    int_xtal = SIXTAL + diff;
+    int_xtal = base_xtal + diff;
 
     // reset the PLLs to apply the correction
     reset();
@@ -206,7 +197,7 @@ void Si5351mcu::correction(int32_t diff) {
 
 /*****************************************************************************
  * This function enables the selected output
- * 
+ *
  * ZERO is clock output enabled
  *****************************************************************************/
 void Si5351mcu::enable(uint8_t clk) {
@@ -234,7 +225,7 @@ void Si5351mcu::enable(uint8_t clk) {
 
 /*****************************************************************************
  * This function disables the selected output
- * 
+ *
  * ONE  is clock output disabled
  * *****************************************************************************/
 void Si5351mcu::disable(uint8_t clk) {
@@ -266,4 +257,3 @@ void Si5351mcu::i2cWrite(byte regist, byte value){
     Wire.write(value);
     Wire.endTransmission();
 }
-
