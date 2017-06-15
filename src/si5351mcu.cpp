@@ -32,8 +32,8 @@
  * This is the custom init procedure, it's used to pass a custom xtal
  *****************************************************************************/
  void Si5351mcu::init(uint32_t nxtal) {
-    // set the new xtal freq
-    int_xtal = nxtal;
+    // set the new base xtal freq
+    base_xtal = nxtal;
 }
 
 
