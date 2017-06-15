@@ -1,5 +1,12 @@
 # Si5351mcu Changelog File #
 
+## v0.3 (June 14, 2017) ##
+
+* Feature: the lib now handle the include and start of the I2C (Wire) library internally via the init procedures
+* Added a new generic init() procedure to handle the default parameters
+* The init() function is required from now on (MANDATORY)
+* Fixed the way we handled the base xtal and the correction factor
+
 ## v0.2rc (April 23, 2017) ##
 
 * Added power level support for each output independently, watch out!: setting the power level will enable the output.
@@ -21,8 +28,6 @@
 * Added Changelog and version files.
 * Extensive tests made to validate every function.
 
-
 ## Initial Release, v0.0 (April 9, 2017) ##
 
 * Basic functionality.
-

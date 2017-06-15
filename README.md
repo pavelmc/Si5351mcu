@@ -19,10 +19,11 @@ This are so far the implemented features (Any particular wish? use the Issues ta
 * Custom XTAL passing on init (default is 27.0MHz)
 * You are able to pass a correction to the xtal while running (as for your own calibration procedure)
 * You have a fast way to power off all outputs of the Chip.
-* You can enable/disable any output at any time.
+* You can enable/disable any output at any time (by default all outputs are off after the init procedure, you has to enable them)
 * You can only have 2 of the 3 outputs running at any moment, see "Two of three" below.
 * It's free of click noise while you move on frequency.
-* **NEW!**  Power control on each output independently (see setPower(clk, level) on the lib header, initial default is to lowest level: 2mA)
+* Power control on each output independently (see _setPower(clk, level)_ on the lib header, initial default is to lowest level: 2mA)
+* **NEW!** You don't need to include and configure the Wire (I2C) library.
 
 ## Click noise free ##
 
@@ -30,38 +31,38 @@ The click noise while tunning the chip came from the following actions (stated i
 
 ```
 1 - Turn CLKx output off.
-2 - Reset the PLLx for the new calculations.
-3 - Turn CLKx output on.
+2 - Update the PLL and MultySynth registers
+3 - Reset the PLLx for the new calculations.
+4 - Turn CLKx output on.
 ```
 
 In my code I follow a strategy of just do that at the start of the freq output and move the PLLs and multisynths freely without reseting the PLLs or multisynths outputs.
-
-In my tests I can move across several Mhz (1 to 10, 28 to 150) without getting off frequency at least with +/- 5 Hz (my instrument tolerance).
 
 ## The start sequence is important ##
 
 Yes, in your setup code segment you must initialize it in the following sequence:
 
+* Initialize the library with the default or optional Xtal Clock.
 * Apply correction factor (if needed)
-* (Optional) power off all outputs
-* Set sweet spots frequencies to **both** clock outputs
+* Set sweet spots frequencies to **both** clock outputs.
 * Force a reset of the PLLs.
+* Enable the desired outputs.
 
-Here you have an example code of what I mean ("Si" is the lib instance): 
+Here you have an example code of what I mean ("Si" is the lib instance):
 
 ```
 setup() {
-    (... my great code here ...)
+    (... code here ...)
 
     //////////////////////////////////
-    // Si5351 functions
+    //        Si5351 functions       /
     //////////////////////////////////
 
-    // apply my calculated correction factor
+    // Init the library, in this case with the defaults
+    Si.init();
+
+    // Optional, apply my calculated correction factor
     Si.correction(-1250);
-
-    // Optional, power off all outputs until needed
-    Si.off();
 
     // set some sweet spot freqs
     Si.setFreq(0, 25000000);       // CLK0 output
@@ -70,7 +71,11 @@ setup() {
     // force the first reset
     Si.reset();
 
-    (... other great code here ...)
+    // enable only the needed outputs
+    Si.enable(0);
+    Si.enable(1);
+
+    (... other code here ...)
 }
 
 ```
@@ -84,9 +89,6 @@ For example if you use CLK0 for VFO and CLK1 for BFO for a 40m receiver with 10 
     Si.setFreq(0, 17150000);  // VFO 7.150 Mhz (mid band) + 10.0 Mhz
     Si.setFreq(1, 10000000);  // BFO 10.0 Mhz
 
-    // force the first reset
-    Si.reset();
-
 ```
 
 If you need to apply/vary the correction factor **after** the setup process you will get a click noise on the next setFreq() to apply the changes.
@@ -95,7 +97,7 @@ If you need to apply/vary the correction factor **after** the setup process you 
 
 Yes, there is a tittle catch here with CLK1 and CLK2: both share PLL_B and as we use math to produce an integer division you can only use one of them at a time.
 
-Note: _In practice you can, but the other will move from the frequency you set, which is odd, so I made them mutually exclusive._
+Note: _In practice you can, but the other will move from the frequency you set, which is an unexpected behavior, so I made them mutually exclusive._
 
 This are the valid combinations for independent clocks output.
 
@@ -112,7 +114,7 @@ The only author is Pavel Milanes, CO7WT, a cuban amateur radio operator; reachab
 
 Always download the latest version from the [github repository](https://github.com/pavelmc/Si5351mcu/)
 
-See ChangeLog.md on this repository to know what are the latest changes.
+See ChangeLog.md and Version files on this repository to know what are the latest changes and versions.
 
 ## If you like to give thanks... ##
 

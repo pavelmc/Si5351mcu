@@ -1,5 +1,5 @@
 /*
- * si5351mcu - Si5351 library for Arduino MCU tuned for size and click-less
+ * si5351mcu - Si5351 library for Arduino, MCU tuned for size and click-less
  *
  * This is the packed example.
  *
@@ -39,12 +39,11 @@
  * Then make a sweep from 60 to 62 Mhz on CLK2, with an stop every 200Khz
  * and then a train of one second pulses will follow with varying power levels
  *
-  * Take into account your XTAL error, see Si.correction(###) below
+ * Take into account your XTAL error, see Si.correction(###) below
  *
  ***************************************************************************/
 
 #include "si5351mcu.h"
-#include "Wire.h"
 
 // lib instantiation as "Si"
 Si5351mcu Si;
@@ -61,12 +60,11 @@ long freq      = freqStart;
 
 
 void setup() {
-    // init the wire lib
-    Wire.begin();
-
     // init the Si5351 lib
-    // this lib doesn't need an init function unless you need to pass a
-    // different xtal (from the default of 27.00000 Mhz)
+    Si.init();
+
+    // For a different xtal (from the default of 27.00000 Mhz)
+    // just pass it on the init procedure, just like this
     // Si.init(26570000);
 
     // set & apply my calculated correction factor
@@ -75,9 +73,8 @@ void setup() {
     // pre-load some sweet spot freqs
     Si.setFreq(0, freqStart);
     Si.setFreq(1, freqStart);
-    
-    // disable all outputs and reset the PLLs
-    Si.off();
+
+    // reset the PLLs
     Si.reset();
 
     // put a tone in the start freq on CLK0
@@ -89,17 +86,17 @@ void setup() {
     Si.enable(1);
     delay(3000);
     // Si.disable(1);   // no need to disable, enabling CLK2 disable this
-    
+
     Si.setFreq(2, freqStart + 1000000);      // CLK2 output
     Si.enable(2);
     delay(3000);
     //Si.disable(2);   // no need to disable, enabling CLK1 disable this
-    
+
     Si.setFreq(1, freqStart +  500000);      // CLK1 output
     Si.enable(1);
     delay(3000);
     //Si.disable(1);   // no need to disable, enabling CLK2 disable this
-    
+
     Si.setFreq(2, freqStart + 1000000);      // CLK2 output
     Si.enable(2);
     delay(3000);
@@ -116,7 +113,7 @@ void setup() {
 void loop() {
     // check for the stop to measure
     if ((freq % EVERY) == 0) {
-        // it's time to flip-flop it 
+        // it's time to flip-flop it
 
         for (byte i = 0; i < 4; i++) {
             // power off the clk2 output
@@ -130,8 +127,9 @@ void loop() {
             //
             // moreover, setting the power on an output will enable it
             // so I will explicit omit the enable here
-            Si.setPower(2,i);
+            Si.setPower(2, i);
             //Si.enable(2);
+
             delay(1000);
         }
 

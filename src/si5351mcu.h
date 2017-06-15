@@ -36,14 +36,14 @@
  * - XTAL is 27 Mhz.
  * - Always put the internal 8pF across the xtal legs to GND
  * - lowest power output (2mA)
+ * - After the init all outputs are off, you need to enable them in your code.
  *
  * The correction procedure is not for the PPM as other libs, this
  * is just +/- Hz to the XTAL freq, you may get a click noise after
  * applying a correction
  *
- * This lib doesn't need an init if you use default values, but if you need
- * to change the default xtal... then there is one to pass the custom xtal
- *
+ * The init procedure is mandatory as it set the Xtal (the default or a custom
+ * one) and prepare the Wire (I2C) library for operation.
  ****************************************************************************/
 
 #ifndef SI5351MCU_H
@@ -69,6 +69,9 @@
 
 class Si5351mcu {
     public:
+        // default init procedure
+        void init(void);
+
         // custom init procedure (XTAL in Hz);
         void init(uint32_t);
 
@@ -105,10 +108,8 @@ class Si5351mcu {
         // via the correction() procedure
         uint32_t int_xtal = base_xtal;
 
-        // clks power holders (2ma by default)
-        uint8_t clk0_power = 0;
-        uint8_t clk1_power = 0;
-        uint8_t clk2_power = 0;
+        // clk# power holders (2ma by default)
+        uint8_t clkpower[3] = {0, 0, 0};
 };
 
 

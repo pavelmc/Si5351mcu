@@ -25,15 +25,36 @@
  */
 
 #include "Arduino.h"
-#include "Wire.h"
 #include "si5351mcu.h"
+
+// wire library loading, if not defined
+#ifndef WIRE_H
+    #include "Wire.h"
+#endif
+
+/*****************************************************************************
+ * This is the default init procedure, it set the Si5351 with this params:
+ * XTAL 27.000 Mhz
+ *****************************************************************************/
+ void Si5351mcu::init() {
+    // init with the default freq
+    init(int_xtal);
+}
+
 
 /*****************************************************************************
  * This is the custom init procedure, it's used to pass a custom xtal
+ * and has the duty of init the I2C protocol handshake
  *****************************************************************************/
  void Si5351mcu::init(uint32_t nxtal) {
     // set the new base xtal freq
     base_xtal = nxtal;
+
+    // start I2C (wire) procedures
+    Wire.begin();
+
+    // power off all the outputs
+    off();
 }
 
 
@@ -96,10 +117,14 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     MSNx_P2 = 128 * b - MSNx_P2 * c;
     MSNx_P3 = c;
 
+    // PLLs and CLK# registers are allocated with a shift, we handle that with
+    // the shifts var to make code smaller
     if (clk > 0 ) shifts = 8;
 
-    // plls
+    // plls, A & B registers separated by 8 bytes
     i2cWrite(26 + shifts, (MSNx_P3 & 65280) >> 8);   // Bits [15:8] of MSNx_P3 in register 26
+
+    // this registers are not 8 bytes apart
     if (clk == 0) {
         i2cWrite(27, MSNx_P3 & 255);
         i2cWrite(28, (MSNx_P1 & 196608) >> 16);
@@ -107,12 +132,15 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
         i2cWrite(35, MSNx_P1 & 255);
         i2cWrite(36, (MSNx_P2 & 0x00030000) >> 10);
     }
+
+    // common register 8 bytes apart.
     i2cWrite(29 + shifts, (MSNx_P1 & 65280) >> 8);   // Bits [15:8]  of MSNx_P1 in register 29
     i2cWrite(30 + shifts, MSNx_P1 & 255);            // Bits [7:0]  of MSNx_P1 in register 30
     i2cWrite(31 + shifts, ((MSNx_P3 & 983040) >> 12) | ((MSNx_P2 & 983040) >> 16)); // Parts of MSNx_P3 and MSNx_P1
     i2cWrite(32 + shifts, (MSNx_P2 & 65280) >> 8);   // Bits [15:8]  of MSNx_P2 in register 32
     i2cWrite(33 + shifts, MSNx_P2 & 255);            // Bits [7:0]  of MSNx_P2 in register 33
 
+    // CLK# registers are exactly 8 * clk# bytes shofted from a base register.
     shifts = clk * 8;
 
     // multisynths
@@ -124,11 +152,14 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     i2cWrite(47 + shifts, 0);                        // Bits [19:16] of MS0_P2 and MS0_P3 are always 0
     i2cWrite(48 + shifts, 0);                        // Bits [15:8]  of MS0_P2 are always 0
     i2cWrite(49 + shifts, 0);                        // Bits [7:0]   of MS0_P2 are always 0
+
+    // See datasheet, special trick when R=4
     if (outdivider == 4 and clk == 0) {
-        i2cWrite(44, 12 | R);       // Special settings for R = 4 (see datasheet)
+        i2cWrite(44, 12 | R);
         i2cWrite(45, 0);            // Bits [15:8] of MSx_P1 must be 0
         i2cWrite(46, 0);            // Bits [7:0] of MSx_P1 must be 0
     }
+
 }
 
 
@@ -141,20 +172,10 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
  * So it must be avoided at all costs, so this lib just call it once at the
  * initialization of the PLLs
  *
- * Not calling this after each freq update can cause some freq error, at
- * least in theory, in practice with my instruments I can't detect any error
- * with +/- 5Hz of tolerance as an educated guess from my part.
- *
- * If you need super extra accuracy you must call it after each freq change,
- * but it will carry on click noise...
- *
- * I think that +/- 3 Hz makes no difference in homebrew SSB equipment
- *
- * You can also implement a reset every X Khz/Mhz to be sure
+ * If you are concerned with accuracy you can implement a reset every
+ * other Mhz to be sure it get exactly on spot.
  ****************************************************************************/
 void Si5351mcu::reset(void) {
-    // PLL resets
-
     // This soft-resets PLL A
     i2cWrite(177, 32);
     // This soft-resets PLL B
@@ -169,7 +190,6 @@ void Si5351mcu::reset(void) {
  *
  * This allows to keep the chip warm and exactly on freq the next time you
  * enable an output.
- *
  ****************************************************************************/
 void Si5351mcu::off() {
     // This disable all the CLK outputs
@@ -182,9 +202,6 @@ void Si5351mcu::off() {
  *
  * This will call a reset of the PLLs and multi-synths so it will produce a
  * click every time it's called
- *
- * You will get the correction applied in the next call o the setFreq()
- *
  ****************************************************************************/
 void Si5351mcu::correction(int32_t diff) {
     // apply some corrections to the xtal
@@ -201,25 +218,16 @@ void Si5351mcu::correction(int32_t diff) {
  * ZERO is clock output enabled
  *****************************************************************************/
 void Si5351mcu::enable(uint8_t clk) {
-    // selecting the registers depending on the clock
-    switch (clk) {
-        case 0:
-            // setting register 16 to the correct values
-            i2cWrite(16, SICLK0_R + clk0_power);
-            break;
-        case 1:
-            // setting register 17 to the correct values
-            i2cWrite(17, SICLK12_R + clk1_power);
-            // disable CLK2 as it's mutually exclusive with this
-            disable(2);
-            break;
-        case 2:
-            // setting register 18 to the correct values
-            i2cWrite(18, SICLK12_R + clk2_power);
-            // disable CLK1 as it's mutually exclusive with this
-            disable(1);
-            break;
-    }
+    // var to handle the mask of the registers value
+    uint8_t m = SICLK0_R;
+    if (clk > 0) m = SICLK12_R;
+
+    // write the register value
+    i2cWrite(16 + clk, m + clkpower[clk]);
+
+    // 1 & 2 are mutually exclusive
+    if (clk == 1) disable(2);
+    if (clk == 2) disable(1);
 }
 
 
@@ -239,9 +247,7 @@ void Si5351mcu::disable(uint8_t clk) {
  ***************************************************************************/
 void Si5351mcu::setPower(byte clk, byte power) {
     // set the power to the correct var
-    if (clk == 0) clk0_power = power;
-    if (clk == 1) clk1_power = power;
-    if (clk == 2) clk2_power = power;
+    clkpower[clk] = power;
 
     // now enable the output to get it applied
     enable(clk);
