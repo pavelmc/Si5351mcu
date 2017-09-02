@@ -21,9 +21,9 @@ This are so far the implemented features (Any particular wish? use the Issues ta
 * You have a fast way to power off all outputs of the Chip.
 * You can enable/disable any output at any time (by default all outputs are off after the init procedure, you has to enable them)
 * You can only have 2 of the 3 outputs running at any moment, see "Two of three" below.
-* It's free of click noise while you move on frequency.
+* It's free of click noise while you move on frequency, yes, there is a catch, see "Click noise free" below.
 * Power control on each output independently (see _setPower(clk, level)_ on the lib header, initial default is to lowest level: 2mA)
-* **NEW!** You don't need to include and configure the Wire (I2C) library.
+* You don't need to include and configure the Wire (I2C) library, this lib do that for you already.
 
 ## Click noise free ##
 
@@ -37,6 +37,14 @@ The click noise while tunning the chip came from the following actions (stated i
 ```
 
 In my code I follow a strategy of just do that at the start of the freq output and move the PLLs and multisynths freely without reseting the PLLs or multisynths outputs.
+
+_**Note:** in version 0.3 I found a signal level problem between frequencies beyond 112 MHz._
+
+_For the way we handle the chip it needs a reset() (yes, click noise included!) for every frequency change beyond VCO/8 (starting around 112 MHz) or you will get a strange level variation in the output of the Chip._
+
+_That was fixed in version 0.4, Please note that this is not a problem if you use it below 112 MHz, never the less we included a failsafe trigger that resets the PLL every 10 kHz if below VCO/8. this is not noticeable in my test with a homebrew Bitx 40v3 (SMD)_
+
+_The arbitrary 10 kHz spacing was chosen from comments in the Bitx20 mail-list from the QRP Labs guys, thanks for the tip._
 
 ## The start sequence is important ##
 
@@ -125,6 +133,6 @@ I live in Cuba island and the Internet/Cell is very expensive here (USD $1.50/ho
 If you like to do so, please go to Ding, select Cuba, select Cubacell (for phone top up) or Nauta (for Internet time)
 
 * For phone topup use this number (My cell, feel free to call me if you like): +53 538-478-19
-* For internet time use this user: co7wt@nauta.com.cu (that's not an email but an user account name)
+* For internet time use this user (Nauta service): co7wt@nauta.com.cu (that's not an email but an user account name)
 
 Thanks!

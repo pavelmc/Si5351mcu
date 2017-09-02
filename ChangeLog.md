@@ -1,5 +1,10 @@
 # Si5351mcu Changelog File #
 
+## v0.4 (August 2, 2017) ##
+
+* Bug Fix: Triaged a strange level problem with freqs above ~112 Mhz, the signal level start dropping around 112MHz and ~150 MHz suddenly go beyond limits (high) to slowly drop again up to the end. Fact: the lib needs a reset() on EVERY frequency change above VCO/8 (~112MHz). Remember that datasheet specs are 8KHz to 160MHz, but we are pushing it up to ~225 Mhz (max_vco/4)
+* Code refractory on some points to match correct behavior, as previous code has little bugs introduced by bad documentation from Silicon Labs (+1 for the chip; -5 for the docs errors). See Bitx20 mail-lits archives for June-August 2017 for more info and the debate.
+
 ## v0.3 (June 14, 2017) ##
 
 * Feature: the lib now handle the include and start of the I2C (Wire) library internally via the init procedures

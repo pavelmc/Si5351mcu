@@ -62,9 +62,14 @@
  * This function set the freq of the corresponding clock.
  *
  * In my tests my Si5351 can work between 7,8 Khz and ~225 Mhz, as usual YMMV
+ *
+ * Beware this:
+ *  - the lib has a reset programmed each 10khz below vco / 8
+ *  - it will produce a reset each time if freq > (vco / 8)
+ *
  ****************************************************************************/
 void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
-    #define c 1048574;
+    #define c 1048575;
     unsigned long fvco;
     unsigned long outdivider;
     uint8_t R = 1;
@@ -76,6 +81,8 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     unsigned long MSNx_P2;
     unsigned long MSNx_P3;
     uint8_t shifts = 0;
+
+    static long oldf;
 
     // With 900 MHz beeing the maximum internal PLL-Frequency
     outdivider = 900000000 / freq;
@@ -123,17 +130,8 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
 
     // plls, A & B registers separated by 8 bytes
     i2cWrite(26 + shifts, (MSNx_P3 & 65280) >> 8);   // Bits [15:8] of MSNx_P3 in register 26
-
-    // this registers are not 8 bytes apart
-    if (clk == 0) {
-        i2cWrite(27, MSNx_P3 & 255);
-        i2cWrite(28, (MSNx_P1 & 196608) >> 16);
-    } else {
-        i2cWrite(35, MSNx_P1 & 255);
-        i2cWrite(36, (MSNx_P2 & 0x00030000) >> 10);
-    }
-
-    // common register 8 bytes apart.
+    i2cWrite(27 + shifts, MSNx_P3 & 255);
+    i2cWrite(28 + shifts, (MSNx_P1 & 196608) >> 16);
     i2cWrite(29 + shifts, (MSNx_P1 & 65280) >> 8);   // Bits [15:8]  of MSNx_P1 in register 29
     i2cWrite(30 + shifts, MSNx_P1 & 255);            // Bits [7:0]  of MSNx_P1 in register 30
     i2cWrite(31 + shifts, ((MSNx_P3 & 983040) >> 12) | ((MSNx_P2 & 983040) >> 16)); // Parts of MSNx_P3 and MSNx_P1
@@ -146,20 +144,29 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     // multisynths
     i2cWrite(42 + shifts, 0);                        // Bits [15:8] of MS0_P3 (always 0) in register 42
     i2cWrite(43 + shifts, 1);                        // Bits [7:0]  of MS0_P3 (always 1) in register 43
-    i2cWrite(44 + shifts, ((MSx_P1 & 196608) >> 16) | R);  // Bits [17:16] of MSx_P1 in bits [1:0] and R in [7:4]
-    i2cWrite(45 + shifts, (MSx_P1 & 65280) >> 8);    // Bits [15:8]  of MSx_P1 in register 45
-    i2cWrite(46 + shifts, MSx_P1 & 255);             // Bits [7:0]  of MSx_P1 in register 46
+    // See datasheet, special trick when R=4
+    if (outdivider == 4) {
+        i2cWrite(44 + shifts, 12 | R);
+        i2cWrite(45 + shifts, 0);            // Bits [15:8] of MSx_P1 must be 0
+        i2cWrite(46 + shifts, 0);            // Bits [7:0] of MSx_P1 must be 0
+    } else {
+        i2cWrite(44 + shifts, ((MSx_P1 & 196608) >> 16) | R);  // Bits [17:16] of MSx_P1 in bits [1:0] and R in [7:4]
+        i2cWrite(45 + shifts, (MSx_P1 & 65280) >> 8);    // Bits [15:8]  of MSx_P1 in register 45
+        i2cWrite(46 + shifts, MSx_P1 & 255);             // Bits [7:0]  of MSx_P1 in register 46
+    }
     i2cWrite(47 + shifts, 0);                        // Bits [19:16] of MS0_P2 and MS0_P3 are always 0
     i2cWrite(48 + shifts, 0);                        // Bits [15:8]  of MS0_P2 are always 0
     i2cWrite(49 + shifts, 0);                        // Bits [7:0]   of MS0_P2 are always 0
 
-    // See datasheet, special trick when R=4
-    if (outdivider == 4 and clk == 0) {
-        i2cWrite(44, 12 | R);
-        i2cWrite(45, 0);            // Bits [15:8] of MSx_P1 must be 0
-        i2cWrite(46, 0);            // Bits [7:0] of MSx_P1 must be 0
+    // reset the pll if we move more than 10khz or we are beyond vco / 8
+    if (freq >= (fvco / 8)) reset();
+    else {
+        long t = oldf - freq;
+        if  (abs(t) > 10000) {
+            oldf = freq;
+            reset();
+        }
     }
-
 }
 
 
@@ -176,10 +183,8 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
  * other Mhz to be sure it get exactly on spot.
  ****************************************************************************/
 void Si5351mcu::reset(void) {
-    // This soft-resets PLL A
-    i2cWrite(177, 32);
-    // This soft-resets PLL B
-    i2cWrite(177, 128);
+    // This soft-resets PLL A & B (32 + 128) in just one step
+    i2cWrite(177, 0xA0);
 }
 
 
