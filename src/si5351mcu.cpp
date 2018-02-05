@@ -69,13 +69,11 @@
  *
  ****************************************************************************/
 void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
-    #define c 1048575;
     unsigned long fvco;
     unsigned long outdivider;
     uint8_t R = 1;
     uint8_t a;
-    unsigned long b;
-    float f;
+    unsigned long b, c, f;
     unsigned long MSx_P1;
     unsigned long MSNx_P1;
     unsigned long MSNx_P2;
@@ -111,17 +109,36 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
         case 128: R = 112; break;
     }
 
-    a = fvco / int_xtal;
-    f = fvco - a * int_xtal;
-    f = f * c;
-    f = f / int_xtal;
-    b = f;
-
+    // we have now the integer part of the output msynth
+    // the b & c is fixed below
     MSx_P1 = 128 * outdivider - 512;
-    f = 128 * b / c;
+
+    // calc the a/b/c for the PLL Msynth
+    /***************************************************************************
+    * We will use integer only on the b/c relation, and will >> 5 (/32) both
+    * to fit it on the 1048 k limit of C and keep the relation
+    * the most accurate possible, this works fine with xtals from
+    * 24 to 28 Mhz.
+    *
+    * This will give errors of about +/- 2 Hz maximum
+    * as per my test and simulations in the worst case, well below the
+    * XTAl ppm error...
+    *
+    * 5282 bytes Flash & 206 bytes SRAM: BEFORE
+    * 4196 bytes Flash (13% Uno) & 206 bytes SRAM: AFTER
+    *
+    ****************************************************************************/
+    a = fvco / int_xtal;
+    b = (fvco % int_xtal) >> 5;     // Integer par of the fraction
+                                    // scaled to match "c" limits
+    c = int_xtal >> 5;              // "c" scaled to match it's limits
+
+    // f is the fraction expressed by 128(b/c)
+    f = (128 * b) / c;
+
+    // build the registers to write
     MSNx_P1 = 128 * a + f - 512;
-    MSNx_P2 = f;
-    MSNx_P2 = 128 * b - MSNx_P2 * c;
+    MSNx_P2 = 128 * b - f * c;
     MSNx_P3 = c;
 
     // PLLs and CLK# registers are allocated with a shift, we handle that with
