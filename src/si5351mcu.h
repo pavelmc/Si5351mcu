@@ -96,6 +96,10 @@ class Si5351mcu {
         // set power output to a specific clk
         void setPower(uint8_t, uint8_t);
 
+        // var to check the clock state
+        bool clkOn[3] = {0, 0, 0};
+
+
     private:
         // used to talk with the chip, via Arduino Wire lib
         void i2cWrite(uint8_t, uint8_t);

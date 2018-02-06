@@ -1,5 +1,10 @@
 # Si5351mcu Changelog File #
 
+## v0.5 (February 5, 2018) ##
+
+* Feature: All integer math now, induced error must be at worst +/- 2 Hz
+* Feature: Clock status via clkOn[clk] public var
+
 ## v0.4 (August 2, 2017) ##
 
 * Bug Fix: Triaged a strange level problem with freqs above ~112 Mhz, the signal level start dropping around 112MHz and ~150 MHz suddenly go beyond limits (high) to slowly drop again up to the end. Fact: the lib needs a reset() on EVERY frequency change above VCO/8 (~112MHz). Remember that datasheet specs are 8KHz to 160MHz, but we are pushing it up to ~225 Mhz (max_vco/4)

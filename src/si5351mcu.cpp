@@ -251,6 +251,9 @@ void Si5351mcu::enable(uint8_t clk) {
     // 1 & 2 are mutually exclusive
     if (clk == 1) disable(2);
     if (clk == 2) disable(1);
+
+    // update the status of the clk
+    clkOn[clk] = 1;
 }
 
 
@@ -262,6 +265,9 @@ void Si5351mcu::enable(uint8_t clk) {
 void Si5351mcu::disable(uint8_t clk) {
     // send
     i2cWrite(16 + clk, 128);
+
+    // update the status of the clk
+    clkOn[clk] = 0;
 }
 
 

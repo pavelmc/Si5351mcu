@@ -16,14 +16,18 @@ This work is based on the previous work of these great people:
 
 This are so far the implemented features (Any particular wish? use the Issues tab for that):
 
-* Custom XTAL passing on init (default is 27.0MHz)
-* You are able to pass a correction to the xtal while running (as for your own calibration procedure)
-* You have a fast way to power off all outputs of the Chip.
+* **NEW:** All integer math now, we saved ~1k of firmware space (_induced math error is below +/- 2 Hz_)
+* Custom XTAL passing on init (default is 27.000 MHz, see _Si.init()_ )
+* You are able to pass a correction to the xtal while running (see _Si.correction()_ )
+* You have a fast way to power off all outputs of the Chip. (see _Si.off()_ )
 * You can enable/disable any output at any time (by default all outputs are off after the init procedure, you has to enable them)
 * You can only have 2 of the 3 outputs running at any moment, see "Two of three" below.
 * It's free of click noise while you move on frequency, yes, there is a catch, see "Click noise free" below.
 * Power control on each output independently (see _setPower(clk, level)_ on the lib header, initial default is to lowest level: 2mA)
 * You don't need to include and configure the Wire (I2C) library, this lib do that for you already.
+* Frequency limits are not hard coded on the lib, so you can stress your hardware to it's particular limit (_without over clocking you can move usually from ~3kHz to ~225 MHz_)
+* **NEW:** You has now a way to verify the status of a particular clock (_Si.clkOn[x] var_)
+
 
 ## Click noise free ##
 
