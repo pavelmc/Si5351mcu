@@ -124,8 +124,7 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     * as per my test and simulations in the worst case, well below the
     * XTAl ppm error...
     *
-    * 5282 bytes Flash & 206 bytes SRAM: BEFORE
-    * 4196 bytes Flash (13% Uno) & 206 bytes SRAM: AFTER
+    * This will free more than 1K of the final eeprom
     *
     ****************************************************************************/
     a = fvco / int_xtal;
@@ -176,8 +175,10 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     i2cWrite(49 + shifts, 0);                        // Bits [7:0]   of MS0_P2 are always 0
 
     // reset the pll if we move more than 10khz or we are beyond vco / 8
-    if (freq >= (fvco / 8)) reset();
-    else {
+    if (freq >= (fvco / 8)) {
+        reset();
+    } else {
+        // just if diff > 10 khz
         long t = oldf - freq;
         if  (abs(t) > 10000) {
             oldf = freq;
