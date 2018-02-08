@@ -11,6 +11,7 @@
  *  - Hans Summers libs and demo code (qrp-labs.com)
  *  - Etherkit (NT7S) Si5351 libs on github
  *  - DK7IH example.
+ *  - Jerry Gaffke integer routines for the bitx20 group
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -1,9 +1,10 @@
 # Si5351mcu Changelog File #
 
-## v0.5 (February 5, 2018) ##
+## v0.5 (February 7, 2018) ##
 
-* Feature: All integer math now, induced error must be at worst +/- 2 Hz
-* Feature: Clock status via clkOn[clk] public var
+* Feature: All integer math now, induced error must be at worst +/- 2 Hz.
+* Feature: Clock status via clkOn[clk] public var.
+* New super simple example.
 
 ## v0.4 (August 2, 2017) ##
 
