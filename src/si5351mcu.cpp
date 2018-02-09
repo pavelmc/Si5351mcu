@@ -86,10 +86,16 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     // With 900 MHz beeing the maximum internal PLL-Frequency
     outdivider = 900000000 / freq;
 
-    // If output divider out of range (>900) use additional Output divider
-    while (outdivider > 900) {
-        R = R * 2;
-        outdivider = outdivider / 2;
+    // If output divider out of range
+    if (outdivider < 6) {   // low: below 6
+        // no go, this will no work.
+        return;
+    } else {                // high: above 900
+        // use additional Output divider ("R")
+        while (outdivider > 900) {
+            R = R * 2;
+            outdivider = outdivider / 2;
+        }
     }
 
     // finds the even divider which delivers the intended Frequency

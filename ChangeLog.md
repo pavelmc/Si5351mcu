@@ -4,6 +4,7 @@
 
 * Feature: All integer math now, induced error must be at worst +/- 2 Hz.
 * Feature: Clock status via clkOn[clk] public var.
+* Bug Fix: Output divider low limit safe guard in place (it make some trouble under some circumstances)
 * New super simple example.
 
 ## v0.4 (August 2, 2017) ##
