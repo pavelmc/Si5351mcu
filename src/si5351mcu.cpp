@@ -70,21 +70,20 @@
  *
  ****************************************************************************/
 void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
-    unsigned long fvco;
-    unsigned long outdivider;
-    uint8_t R = 1;
-    uint8_t a;
-    unsigned long b, c, f;
-    unsigned long MSx_P1;
-    unsigned long MSNx_P1;
-    unsigned long MSNx_P2;
-    unsigned long MSNx_P3;
-    uint8_t shifts = 0;
+    uint8_t a, R = 1, shifts = 0;
+    uint32_t b, c, f, fvco, outdivider;
+    uint32_t MSx_P1, MSNx_P1, MSNx_P2, MSNx_P3;
 
-    static long oldf;
-
-    // With 900 MHz beeing the maximum internal PLL-Frequency
-    outdivider = 900000000 / freq;
+    // Overclock option
+    #ifdef SI_OVERCLOCK
+        // user a overclock setting for the VCO, max value in my hardware
+        // was 1.05 to 1.1 GHz, as usual YMMV
+        outdivider = SI_OVERCLOCK / freq;
+    #else
+        // normal VCO from the datasheet and AN
+        // With 900 MHz beeing the maximum internal PLL-Frequency
+        outdivider = 900000000 / freq;
+    #endif
 
     // If output divider out of range
     if (outdivider < 6) {   // low: below 6
@@ -138,8 +137,9 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     b = (fvco % int_xtal) >> 5;     // Integer par of the fraction
                                     // scaled to match "c" limits
     c = int_xtal >> 5;              // "c" scaled to match it's limits
+                                    // in the register
 
-    // f is the fraction expressed by 128(b/c)
+    // f is (128*b)/c to mimic the Floor(128*(b/c)) from the datasheet
     f = (128 * b) / c;
 
     // build the registers to write
@@ -161,36 +161,35 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     i2cWrite(32 + shifts, (MSNx_P2 & 65280) >> 8);   // Bits [15:8]  of MSNx_P2 in register 32
     i2cWrite(33 + shifts, MSNx_P2 & 255);            // Bits [7:0]  of MSNx_P2 in register 33
 
-    // CLK# registers are exactly 8 * clk# bytes shofted from a base register.
-    shifts = clk * 8;
+    // Write the output divider msynth only if we need to, in this way we can
+    // speed up the frequency changes almost by half the time most of the time
+    // and the main goal is to avoid the nasty click noise on freq change
+    if (omsynth[clk] != outdivider) {
+        // CLK# registers are exactly 8 * clk# bytes shofted from a base register.
+        shifts = clk * 8;
 
-    // multisynths
-    i2cWrite(42 + shifts, 0);                        // Bits [15:8] of MS0_P3 (always 0) in register 42
-    i2cWrite(43 + shifts, 1);                        // Bits [7:0]  of MS0_P3 (always 1) in register 43
-    // See datasheet, special trick when R=4
-    if (outdivider == 4) {
-        i2cWrite(44 + shifts, 12 | R);
-        i2cWrite(45 + shifts, 0);            // Bits [15:8] of MSx_P1 must be 0
-        i2cWrite(46 + shifts, 0);            // Bits [7:0] of MSx_P1 must be 0
-    } else {
-        i2cWrite(44 + shifts, ((MSx_P1 & 196608) >> 16) | R);  // Bits [17:16] of MSx_P1 in bits [1:0] and R in [7:4]
-        i2cWrite(45 + shifts, (MSx_P1 & 65280) >> 8);    // Bits [15:8]  of MSx_P1 in register 45
-        i2cWrite(46 + shifts, MSx_P1 & 255);             // Bits [7:0]  of MSx_P1 in register 46
-    }
-    i2cWrite(47 + shifts, 0);                        // Bits [19:16] of MS0_P2 and MS0_P3 are always 0
-    i2cWrite(48 + shifts, 0);                        // Bits [15:8]  of MS0_P2 are always 0
-    i2cWrite(49 + shifts, 0);                        // Bits [7:0]   of MS0_P2 are always 0
-
-    // reset the pll if we move more than 10khz or we are beyond vco / 8
-    if (freq >= (fvco / 8)) {
-        reset();
-    } else {
-        // just if diff > 10 khz
-        long t = oldf - freq;
-        if  (abs(t) > 10000) {
-            oldf = freq;
-            reset();
+        // multisynths
+        i2cWrite(42 + shifts, 0);                        // Bits [15:8] of MS0_P3 (always 0) in register 42
+        i2cWrite(43 + shifts, 1);                        // Bits [7:0]  of MS0_P3 (always 1) in register 43
+        // See datasheet, special trick when R=4
+        if (outdivider == 4) {
+            i2cWrite(44 + shifts, 12 | R);
+            i2cWrite(45 + shifts, 0);            // Bits [15:8] of MSx_P1 must be 0
+            i2cWrite(46 + shifts, 0);            // Bits [7:0] of MSx_P1 must be 0
+        } else {
+            i2cWrite(44 + shifts, ((MSx_P1 & 196608) >> 16) | R);  // Bits [17:16] of MSx_P1 in bits [1:0] and R in [7:4]
+            i2cWrite(45 + shifts, (MSx_P1 & 65280) >> 8);    // Bits [15:8]  of MSx_P1 in register 45
+            i2cWrite(46 + shifts, MSx_P1 & 255);             // Bits [7:0]  of MSx_P1 in register 46
         }
+        i2cWrite(47 + shifts, 0);                        // Bits [19:16] of MS0_P2 and MS0_P3 are always 0
+        i2cWrite(48 + shifts, 0);                        // Bits [15:8]  of MS0_P2 are always 0
+        i2cWrite(49 + shifts, 0);                        // Bits [7:0]   of MS0_P2 are always 0
+
+        // must reset the so called "PLL", in fact the output msynth
+        reset();
+
+        // keep track of the change
+        omsynth[clk] = (uint16_t)outdivider;
     }
 }
 

@@ -115,6 +115,26 @@ class Si5351mcu {
 
         // clk# power holders (2ma by default)
         uint8_t clkpower[3] = {0, 0, 0};
+
+        // local var to keep track of when to reset the "pll"
+        /*******************************************************
+         * BAD CONCEPT on the datasheet and AN:
+         *
+         * The chip has a soft-reset for PLL A & B but in
+         * practice the PLL does not need to be reseted.
+         *
+         * Test shows that if you fix the Msynth output
+         * dividers and move any of the VCO from bottom to top
+         * the frequency moves smooth and clean, no reset needed
+         *
+         * The reset is needed when you changes the value of the
+         * Msynth output divider, even so it's not always needed
+         * so we use this var to keep track of all three and only
+         * reset the "PLL" when this value changes to be sure
+         *
+         * Its a word (16 bit) because the final max value is 900
+         *******************************************************/
+        uint16_t omsynth[3] = {0, 0, 0};
 };
 
 
