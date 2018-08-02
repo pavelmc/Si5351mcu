@@ -21,7 +21,7 @@ My goal is this:
 
 The main purpose is to be used in Radio receiver projects, so this two mentioned goals are the golden rule.
 
-Let's list some of goals archeivements and bonuses: 
+Let's list some of goals archeivements and bonuses:
 
 **Small firmware footprint:**
 
@@ -161,6 +161,7 @@ loop() {
 
     (... more of your code here ...)
 }
+```
 
 
 ## OVERCLOCK ##
@@ -183,7 +184,7 @@ With a maximum VCO of 1.000 GHz and a lower division factor of 4 we have jumped 
 
 **How to do it?**
 
-You need to declare a macro **BEFORE** the library include, just like this:
+You need to declare a macro with the overclock value **BEFORE** the library include, just like this:
 
 ```
 (... your code here ...)
