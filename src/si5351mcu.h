@@ -117,7 +117,7 @@ class Si5351mcu {
         uint8_t clkpower[3] = {0, 0, 0};
 
         // local var to keep track of when to reset the "pll"
-        /*******************************************************
+        /*********************************************************
          * BAD CONCEPT on the datasheet and AN:
          *
          * The chip has a soft-reset for PLL A & B but in
@@ -132,8 +132,8 @@ class Si5351mcu {
          * so we use this var to keep track of all three and only
          * reset the "PLL" when this value changes to be sure
          *
-         * Its a word (16 bit) because the final max value is 900
-         *******************************************************/
+         * It's a word (16 bit) because the final max value is 900
+         *********************************************************/
         uint16_t omsynth[3] = {0, 0, 0};
 };
 
