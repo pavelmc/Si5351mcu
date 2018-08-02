@@ -49,7 +49,7 @@
  *****************************************************************************/
  void Si5351mcu::init(uint32_t nxtal) {
     // set the new base xtal freq
-    base_xtal = nxtal;
+    base_xtal = int_xtal = nxtal;
 
     // start I2C (wire) procedures
     Wire.begin();
@@ -62,12 +62,19 @@
 /*****************************************************************************
  * This function set the freq of the corresponding clock.
  *
- * In my tests my Si5351 can work between 7,8 Khz and ~225 Mhz, as usual YMMV
+ * In my tests my Si5351 can work between 7,8 Khz and ~225 Mhz [~250 MHz with
+ * overclocking] as usual YMMV
  *
- * Beware this:
- *  - the lib has a reset programmed each 10khz below vco / 8
- *  - it will produce a reset each time if freq > (vco / 8)
+ * Click noise:
+ * - The lib has a reset programmed [aka: click noise] every time it needs to
+ *   change the output divider of a particular MSynth, if you move in big steps
+ *   this can lead to an increased rate of click noise per tunning step.
+ * - If you move at a pace of a few Hz each time the output divider will
+ *   change at a low rate, hence less click noise per tunning step.
+ * - The output divider moves [change] faster at high frequencies, so at HF the
+ *   clikc noise is at the real minimum possible.
  *
+ * [See the README.md file for other details]
  ****************************************************************************/
 void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     uint8_t a, R = 1, shifts = 0;
@@ -77,7 +84,7 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     // Overclock option
     #ifdef SI_OVERCLOCK
         // user a overclock setting for the VCO, max value in my hardware
-        // was 1.05 to 1.1 GHz, as usual YMMV
+        // was 1.05 to 1.1 GHz, as usual YMMV [See README.md for details]
         outdivider = SI_OVERCLOCK / freq;
     #else
         // normal VCO from the datasheet and AN
@@ -159,7 +166,7 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
     // speed up the frequency changes almost by half the time most of the time
     // and the main goal is to avoid the nasty click noise on freq change
     if (omsynth[clk] != outdivider) {
-        // CLK# registers are exactly 8 * clk# bytes shofted from a base register.
+        // CLK# registers are exactly 8 * clk# bytes shifted from a base register.
         shifts = clk * 8;
 
         // multisynths
@@ -194,8 +201,8 @@ void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
  * This must be called to soft reset the PLLs and cycle the output of the
  * multisynths: this is the "click" noise source in the RF spectrum.
  *
- * So it must be avoided at all costs, so this lib just call it once at the
- * initialization of the PLLs
+ * So it must be avoided at all costs, so this lib just call it at the
+ * initialization of the PLLs and when a correction is applied
  *
  * If you are concerned with accuracy you can implement a reset every
  * other Mhz to be sure it get exactly on spot.
@@ -238,7 +245,7 @@ void Si5351mcu::correction(int32_t diff) {
 /*****************************************************************************
  * This function enables the selected output
  *
- * ZERO is clock output enabled
+ * Beware: ZERO is clock output enabled
  *****************************************************************************/
 void Si5351mcu::enable(uint8_t clk) {
     // var to handle the mask of the registers value
@@ -260,7 +267,7 @@ void Si5351mcu::enable(uint8_t clk) {
 /*****************************************************************************
  * This function disables the selected output
  *
- * ONE  is clock output disabled
+ * Beware: ONE is clock output disabled
  * *****************************************************************************/
 void Si5351mcu::disable(uint8_t clk) {
     // send

@@ -11,11 +11,17 @@ This work is based on the previous work of these great people:
 * [DK7IH demo code:](https://radiotransmitter.wordpress.com/category/si5351a/) The first clickless noise code on the wild.
 * [Jerry Gaffke](https://github.com/afarhan/ubitx.git) integer routines for the Raduino and ubitx
 
-## Strategy is everything ##
+## Set your Goal and make an estrategy ##
 
-There is a few routines in the Internet to manage the Si5351 chip, all of them has a few distinct feature set because they use different strategies that make them unique in some way.
+There is a few routines in the Internet to manage the Si5351 chip, all of them has a few distinct feature set because they use different strategies (different goals) that make them unique in some way.
 
-This lib has this key points when compared against other libs:
+My goal is this:
+* Keep it as small as possible (Smallest firmware footprint)
+* Less phase and click noise possible (Playing with every trick possible)
+
+The main purpose is to be used in Radio receiver projects, so this two mentioned goals are the golden rule.
+
+Let's list some of goals archeivements and bonuses: 
 
 **Small firmware footprint:**
 
@@ -27,9 +33,9 @@ The same settings with the [Si5351Arduino library (Etherkit)](https://github.com
 
 **Phase noise to the minimum:**
 
-We use every trick on the datasheet & Application Notes or from the Internet to minimize phase noise.
+We use every trick on the datasheet, OEM Application Notes or the Internet to minimize phase noise. (Even a few ones learned on the process)
 
-For example the [Etherkit](https://github.com/etherkit/Si5351Arduino) library and [Jerry Gaffke](https://github.com/afarhan/ubitx.git) embedded routines uses some but not all the tricks to minimize phase noise (Etherkit one gives control over all features, Jerry Gaffke has small footprint and in the process sacrifice phase noise and frequency range)
+For example the [Etherkit](https://github.com/etherkit/Si5351Arduino) library and [Jerry Gaffke](https://github.com/afarhan/ubitx.git) embedded routines uses some but not all the tricks to minimize phase noise (Etherkit one gives control over all features, Jerry Gaffke has small footprint and in the process he sacrifice phase noise and frequency range)
 
 **Click noise free:**
 
@@ -63,15 +69,17 @@ This are so far the implemented features (Any particular wish? use the Issues ta
 * Initial power defaults to the lowest level (2mA) for all outputs.
 * You don't need to include and configure the Wire (I2C) library, this lib do that for you already.
 * Frequency limits are not hard coded on the lib, so you can stress your hardware to it's particular limit (_You can move usually from ~3kHz to ~225 MHz, far away from the 8kHz to 160 MHz limits from the datasheet_)
-* **NEW:** You has a way to verify the status of a particular clock (_Enabled/Disabled by the Si.clkOn[clk] var_)
-* **NEW:** From v0.5 and beyond we saved more than 1 kbyte of your precious firmware space due to the use of all integer math now (Worst induced error is below +/- 2 Hz)
-* **NEW:** Overclock, you can move the limits upward up to ~250MHz (see the "OVERCLOCK" section below)
-* **NEW:** Improved the click noise algorithm to get even more click noise reduction (see Click noise free section below)
-* **NEW:** Fast frequency changes as part of the improved click noise algorithm (see Click noise free section below)
+* You has a way to verify the status of a particular clock (_Enabled/Disabled by the Si.clkOn[clk] var_)
+* From v0.5 and beyond we saved more than 1 kbyte of your precious firmware space due to the use of all integer math now (Worst induced error is below +/- 1 Hz)
+* Overclock, yes, you can move the limits upward up to ~250MHz (see the "OVERCLOCK" section below)
+* Improved the click noise algorithm to get even more click noise reduction (see Click noise free section below)
+* Fast frequency changes as part of the improved click noise algorithm (see Click noise free section below)
 
 ## How to use the lib ##
 
-Install the lib from the zip file download: just extract it on your library directory
+Get the lib by cloning this git repository or get it by clicking the green "Download button" on the page.
+
+Move it or extract it on your library directory
 
 Include the lib in your code:
 
@@ -109,8 +117,8 @@ setup() {
     // Init the library, in this case with the default 27.000 Mhz Xtal
     Si.init();
 
-    // commented Init procedure for a 25.000 MHz xtal
-    //Si.init(25000000);
+    // commented Init procedure for a not default 25.000 MHz xtal
+    //Si.init(25000000L);
 
     // Optional, apply a pre-calculated correction factor
     Si.correction(-150);    // Xtal is low by 150 Hz
@@ -161,27 +169,27 @@ Yes, you can overclock the Si5351, the datasheet states that the VCO moves from 
 
 But what if we can move the VCO frequency to a higher values?
 
-The overclock does just that, use a higher top limit for the VCO on the calculations. In my test with two batch of the Si5351A I can get safely up to 1.000 GHz without trouble; in one batch the PLL unlocks around 1.1 GHz and in the other about 1.050 GHz; so I recommend not going beyond 1.000 GHz.
+The overclock feature does just that, use a higher top limit for the VCO on the calculations. In my test with two batch of the Si5351A I can get safely up to 1.000 GHz without trouble; in one batch the PLL unlocks around 1.1 GHz and in the other about 1.050 GHz; so I recommend not going beyond 1.000 GHz.
 
-With a maximum VCO of 1.000 GHz and a lower division factor of 4 we have jumped from a 255 MHz to 250 MHz top frequency that can be generated with out cheap chip.
+With a maximum VCO of 1.000 GHz and a lower division factor of 4 we have jumped from a 255 MHz to 250 MHz top frequency that can be generated with our cheap chip.
 
 **Some "must include" WARNINGS:**
 
-* The chip was not intended to go that high, so, use it with caution and test it on your hardware moving the overclock limit in steps of 50 MHz starting with 900 MHz and testing with every change until it does not work; then go down by 100 MHz to be in a safe zone.
-* Moving the upper limit has its penalty on the lower level, your bottom frequency will move from the ~3 kHz to ~10 kHz.
-* The phase noise of the output if worst as you use a higher frequency, at a _**fixed**_ 250 MHz it's noticeable but no so bad.
+* The chip was not intended to go that high, so, use it with caution and test it on your hardware moving the overclock limit in steps of 10 MHz starting with 900 MHz and testing with every change until it does not work; then go down by 10 MHz to be in a safe zone.
+* Moving the upper limit has its penalty on the lower level, your bottom frequency will move from the ~3 kHz to ~10 kHz range.
+* The phase noise of the output if worst as you use a higher frequency, at a _**fixed**_ 250 MHz it's noticeable but no so bad for a TTL or CMOS clock application.
 * The phase noise is specially bad if you make a sweep or move action beyond 180 MHz; the phase noise from the unlock state to next lock of the PLL is very noticeable in a spectrum analyzer, even on a cheap RTL-SDR one.
 * I recommend to only use the outputs beyond 150 MHz as fixed value and don't move them if you cares about phase noise.
 
 **How to do it?**
 
-You need to declare a macro after the library include, just like this:
+You need to declare a macro **BEFORE** the library include, just like this:
 
 ```
 (... your code here ...)
 
 // Using the overclock feature for the Si5351mcu library
-#define SI_OVERCLOCK 1000000000      // 1.0 GHz in Hz
+#define SI_OVERCLOCK 1000000000L      // 1.0 GHz in Hz
 
 // now include the library
 #include "si5351mcu.h"
@@ -221,15 +229,15 @@ After some test I find that you need the "PLL reset" (Register 177) trick only o
 
 Implementing that in code was easy, an array to keep track of the actual output divider Msynth and only write it to the chip and reset "the PLL" when it's needed.
 
-That leads to a I2C time reduction by half as a side effect!
+Hey! that leads to a I2C time reduction by half (most of the time) as a side effect!
 
 Most of the time when you are making a sweep the output divider Msynth has a constant value and you only moves the VCO (PLL) Then I wrote just 8 bytes to the I2C bus (to control the VCO/PLL) instead of 16 (8 for the VCO/PLL & 8 more for the output divider Msynth) or 17 (16 + reset byte) most of the time, cutting time between writes to half making frequency changes 2x fast as before.
 
 ## Two of three ##
 
-Yes, there is a tittle catch here with CLK1 and CLK2: both share PLL_B and as we use our own algorithm to calculate the frequencies and minimize phase noise you can only use one of them at a time as.
+Yes, there is a tittle catch here with CLK1 and CLK2: both share PLL_B and as we use our own algorithm to calculate the frequencies and minimize phase noise you can only use one of them at a time.
 
-Note: _In practice you can, but the other will move from the frequency you set, which is an unexpected behavior, so I made them mutually exclusive._
+Note: _In practice you can, but the other will move from the frequency you set, which is an unexpected behavior, so I made them mutually exclusive (CLK1 and CLK2)._
 
 This are the valid combinations for independent clocks output.
 

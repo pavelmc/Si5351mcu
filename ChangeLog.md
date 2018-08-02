@@ -1,5 +1,9 @@
 # Si5351mcu Changelog File #
 
+## v0.6.1 (Augus 1, 2018) ##
+
+* Documentation update and completion to match code features and tricks
+
 ## v0.6 (February 10, 2018) ##
 
 * Feature: you can now OVERCLOCK the Si5351 to get up to 250 MHz from it, see the overclock subject on the README.md
