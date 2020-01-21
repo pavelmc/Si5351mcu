@@ -37,7 +37,7 @@
  * This is the default init procedure, it set the Si5351 with this params:
  * XTAL 27.000 Mhz
  *****************************************************************************/
- void Si5351mcu::init() {
+ void Si5351mcu::init(void) {
     // init with the default freq
     init(int_xtal);
 }
@@ -76,7 +76,7 @@
  *
  * [See the README.md file for other details]
  ****************************************************************************/
-void Si5351mcu::setFreq(uint8_t clk, unsigned long freq) {
+void Si5351mcu::setFreq(uint8_t clk, uint32_t freq) {
     uint8_t a, R = 1, shifts = 0;
     uint32_t b, c, f, fvco, outdivider;
     uint32_t MSx_P1, MSNx_P1, MSNx_P2, MSNx_P3;
@@ -221,7 +221,7 @@ void Si5351mcu::reset(void) {
  * This allows to keep the chip warm and exactly on freq the next time you
  * enable an output.
  ****************************************************************************/
-void Si5351mcu::off() {
+void Si5351mcu::off(void) {
     // This disable all the CLK outputs
     for (byte i=0; i<3; i++) disable(i);
 }
@@ -281,7 +281,7 @@ void Si5351mcu::disable(uint8_t clk) {
 /****************************************************************************
  * Set the power output for each output independently
  ***************************************************************************/
-void Si5351mcu::setPower(byte clk, byte power) {
+void Si5351mcu::setPower(uint8_t clk, uint8_t power) {
     // set the power to the correct var
     clkpower[clk] = power;
 
@@ -293,7 +293,7 @@ void Si5351mcu::setPower(byte clk, byte power) {
 /****************************************************************************
  * Private function to send the register data to the Si5351, arduino way.
  ***************************************************************************/
-void Si5351mcu::i2cWrite(byte regist, byte value){
+void Si5351mcu::i2cWrite(uint8_t regist, uint8_t value) {
     Wire.beginTransmission(SIADDR);
     Wire.write(regist);
     Wire.write(value);
