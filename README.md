@@ -1,4 +1,4 @@
-# Arduino Si5351 Library tuned for size and click noise free. #
+# Arduino Si5351 Library tuned for size and click noise free #
 
 This library is tuned for size on the Arduino platform, it will control CLK0, CLK1 and CLK2 outputs for the Si5351A (the version with just 3 clocks out, but you will not be able to use the three at once).
 
@@ -7,8 +7,8 @@ This library is tuned for size on the Arduino platform, it will control CLK0, CL
 This work is based on the previous work of these great people:
 
 * [Etherkit/NT7S:](https://github.com/etherkit/Si5351Arduino) The mainstream full featured lib, with big code as well (based on Linux kernel code)
-* [QRP Labs demo code from Hans Summers:](http://qrp-labs.com/synth/si5351ademo.html) The smallest and simple ones on the net.
-* [DK7IH demo code:](https://radiotransmitter.wordpress.com/category/si5351a/) The first clickless noise code on the wild.
+* [QRP Labs demo code from Hans Summers:](http://qrp-labs.com/synth/si5351ademo.html) The smallest and simple ones on the net
+* [DK7IH demo code:](https://radiotransmitter.wordpress.com/category/si5351a/) The first clickless noise code on the wild
 * [Jerry Gaffke](https://github.com/afarhan/ubitx.git) integer routines for the Raduino and ubitx
 
 ## Set your Goal and make an estrategy ##
@@ -16,12 +16,13 @@ This work is based on the previous work of these great people:
 There is a few routines in the Internet to manage the Si5351 chip, all of them has a few distinct feature set because they use different strategies (different goals) that make them unique in some way.
 
 My goal is this:
+
 * Keep it as small as possible (Smallest firmware footprint)
 * Less phase and click noise possible (Playing with every trick possible)
 
 The main purpose is to be used in Radio receiver projects, so this two mentioned goals are the golden rule.
 
-Let's list some of goals archeivements and bonuses:
+Let's list some of goals achievements and bonuses:
 
 **Small firmware footprint:**
 
@@ -172,7 +173,7 @@ But what if we can move the VCO frequency to a higher values?
 
 The overclock feature does just that, use a higher top limit for the VCO on the calculations. In my test with two batch of the Si5351A I can get safely up to 1.000 GHz without trouble; in one batch the PLL unlocks around 1.1 GHz and in the other about 1.050 GHz; so I recommend not going beyond 1.000 GHz.
 
-With a maximum VCO of 1.000 GHz and a lower division factor of 4 we have jumped from a 255 MHz to 250 MHz top frequency that can be generated with our cheap chip.
+With a maximum VCO of 1.000 GHz and a lower division factor of 4 we have jumped from a 225 MHz to 250 MHz top frequency that can be generated with our cheap chip.
 
 **Some "must include" WARNINGS:**
 
@@ -261,11 +262,8 @@ See ChangeLog.md and Version files on this repository to know what are the lates
 
 No payment of whatsoever is required to use this code: this is [Free/Libre Software](https://en.wikipedia.org/wiki/Software_Libre), nevertheless donations are very welcomed.
 
-I live in Cuba island and the Internet/Cell is very expensive here (USD $1.00/hour), you can donate anonymously internet time or cell phone air time to me via [Ding Topups](https://www.ding.com/) to keep me connected and developing for the homebrewers community.
+I live in Cuba island and the Internet is very expensive here (USD $10.00 per 1GB of data), you can donate anonymously internet time or cell mobile data to me via [Ding Topups](https://www.ding.com/) to keep me connected and developing for the homebrew/DIY community.
 
-If you like to do so, please go to Ding, select Cuba, select Cubacell (for phone top up) or Nauta (for Internet time)
-
-* For phone topup use this number (My cell, feel free to call me if you like): +53 538-478-19
-* For internet time use this user (Nauta service): co7wt@nauta.com.cu (that's not an email but an user account name)
+If you like to do so, please go to Ding, select Cuba, select Cubacel and use my number `(+53) 538-478-19` (feel free to call me if you like)
 
 Thanks!
