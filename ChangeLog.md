@@ -1,5 +1,9 @@
 # Si5351mcu Changelog File #
 
+## v0.6.2 (January 21, 2020) ##
+
+* Fix a type mismatch that causes an error when you compile it under ESP8266/ESP32
+
 ## v0.6.1 (Augus 1, 2018) ##
 
 * Documentation update and completion to match code features and tricks
