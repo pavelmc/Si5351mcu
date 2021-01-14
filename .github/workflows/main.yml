@@ -22,8 +22,7 @@
     # Comma or space separated list of complete names of all sketches / examples to be excluded in the build for this board.
     sketches-exclude: # optional, default is 
     # Build parameter like -DDEBUG for each example specified or for all examples, if example name is "All". In json format.
-For example: build-properties: '{ "WhistleSwitch": "-DDEBUG -DFREQUENCY_RANGE_LOW", "SimpleFrequencyDetector": "-DINFO" }'
-
+    #For example: build-properties: '{ "WhistleSwitch": "-DDEBUG -DFREQUENCY_RANGE_LOW", "SimpleFrequencyDetector": "-DINFO" }'
     build-properties: # optional, default is 
     # Flag to set the build directory (arduino-cli paramer --build-path) to /build subdirectory of compiled sketches.
     set-build-path: # optional, default is false
