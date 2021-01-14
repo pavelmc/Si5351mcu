@@ -1,60 +1,33 @@
-# This is the name of the workflow, visible on GitHub UI.
-name: test
- 
-# Here we tell GitHub to run the workflow when a commit
-# is pushed or a Pull Request is opened.
-on: [push, pull_request]
- 
-# This is the list of jobs that will be run concurrently.
-# Since we use a build matrix, the actual number of jobs
-# started depends on how many configurations the matrix
-# will produce.
-jobs:
-  # This is the name of the job - can be whatever.
-  test-matrix:
- 
-    # Here we tell GitHub that the jobs must be determined
-    # dynamically depending on a matrix configuration.
-    strategy:
-      matrix:
-        # The matrix will produce one job for each configuration
-        # parameter of type arduino-platform
-        arduino-platform: ["arduino:avr"]
-        # This is usually optional but we need to statically define the
-        # FQBN of the boards we want to test for each platform. In the
-        # future the CLI might automatically detect and download the core
-        # needed to compile against a certain FQBN, at that point the
-        # following include section will be useless.
-        include:
-          # This works like this: when the platform is "arduino:avr", the
-          # variable fqbn is set to "arduino:avr:uno".
-          - arduino-platform: "arduino:avr"
-            fqbn: "arduino:avr:uno"
- 
-    # This is the platform GitHub will use to run our workflow, we
-    # pick Windows for no particular reason.
-    runs-on: windows-latest
-    #runs-on: ubuntu-latest
- 
-    # This is the list of steps this job will run.
-    steps:
-      # First of all, we clone the repo using the checkout action.
-      - name: Checkout
-        uses: actions/checkout@master
- 
-      # We use the arduino/setup-arduino-cli action to install and
-      # configure the Arduino CLI on the system.
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v1.0.0
- 
-      # We then install the platform, which one will be determined
-      # dynamically by the build matrix.
-      - name: Install platform
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install ${{ matrix.arduino-platform }}
- 
-      # Finally, we compile the sketch, using the FQBN that was set
-      # in the build matrix.
-      - name: Compile Example 1
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/si5351_mcu/si5351_mcu.ino
+- name: Test compile for Arduino
+  # You may pin to the exact commit or the version.
+  # uses: ArminJo/arduino-test-compile@4b0ac82c8621c06c55935a491b42459f9546f0b4
+  uses: ArminJo/arduino-test-compile@v3
+  with:
+    # Version of arduino-cli to use when builing. Current (7/2020) one is 0.11.0.
+    #cli-version: # optional, default is latest
+    # Comma sepatated list of patterns or filenames (without path) of the sketch(es) to test compile. Useful if the sketch is a *.cpp or *.c file or only one sketch in the repository should be compiled.
+    sketch-names: # optional, default is *.ino
+    # The start directory to look for the sketch-names to test compile. Can be a path like "digistump-avr/libraries/*/examples/C*/" .
+    sketch-names-find-start: # optional, default is .
+    # Fully Qualified Board Name of the Arduino board. You may add a suffix behind the fqbn with "|" to specify one board for e.g. different compile options like arduino:avr:uno|trace.
+    arduino-board-fqbn: # optional, default is arduino:avr:uno
+    # The platform specifier, if you require a fixed version like arduino:avr@1.8.2 or do not want the specifier derived from the 2 first elements of the arduino-board-fqbn
+    arduino-platform: avr
+    # The platform URL for the required board description if arduino-board-fqbn does not start with "arduino:" and not explicitly specified by platform-url.
+    platform-default-url: # optional, default is 
+    # The platform URL for the required board description if arduino-board-fqbn does not start with "arduino:".
+    platform-url: # optional, default is 
+    # Comma separated list of arduino library names required for compiling the sketches / examples for this board.
+    required-libraries: Si5351mcu@0.5
+    # Comma or space separated list of complete names of all sketches / examples to be excluded in the build for this board.
+    sketches-exclude: # optional, default is 
+    # Build parameter like -DDEBUG for each example specified or for all examples, if example name is "All". In json format.
+For example: build-properties: '{ "WhistleSwitch": "-DDEBUG -DFREQUENCY_RANGE_LOW", "SimpleFrequencyDetector": "-DINFO" }'
+
+    build-properties: # optional, default is 
+    # Flag to set the build directory (arduino-cli paramer --build-path) to /build subdirectory of compiled sketches.
+    set-build-path: # optional, default is false
+    # If set to "true" the action logs verbose compile output even during successful builds
+    debug-compile: # optional, default is 
+    # If set to "true" the action logs verbose arduino-cli output during installation
+    debug-install: # optional, default is 
