@@ -1,4 +1,4 @@
-- name: Test compile for Arduino
+name: Test compile for Arduino
   # You may pin to the exact commit or the version.
   # uses: ArminJo/arduino-test-compile@4b0ac82c8621c06c55935a491b42459f9546f0b4
   uses: ArminJo/arduino-test-compile@v3
