@@ -19,6 +19,7 @@ My goal is this:
 
 * Keep it as small as possible (Smallest firmware footprint)
 * Less phase and click noise possible (Playing with every trick possible)
+* Make it as fast as possible (thanks to @birdwes for I2C busrt mode write)
 
 The main purpose is to be used in Radio receiver projects, so this two mentioned goals are the golden rule.
 
@@ -48,9 +49,9 @@ I have learned a few tricks from many sources in the Internet and after some loc
 
 **Fast frequency changes:**
 
-This was a side effect of the last trick to minimize the click noise, see the "Click noise free" section below for details.
+This was a side effect of the last trick to minimize the click noise, see the "Click noise free" section below for details; also with the I2C busrt write contribution from @birdwes even the I2C writes takes a lot less time (implemented since version 0.7.0)
 
-Summary: other routines write all registers for every frequency change, I write half of them most of the time, speeding up the process.
+Summary: other routines write all registers for every frequency change, one byte at a time; I write half of them most of the time and in a bust mode speeding up the process a lot.
 
 **Two of three**
 
@@ -69,12 +70,13 @@ This are so far the implemented features (Any particular wish? use the Issues ta
 * Power control on each output independently (See _Si.setPower(clk, level)_ on the lib header)
 * Initial power defaults to the lowest level (2mA) for all outputs.
 * You don't need to include and configure the Wire (I2C) library, this lib do that for you already.
+* I2C writes are handled in busrt mode, just init the I2C once per frequency change and dump the registers content and close; saving the init for each byte sent as normal.
 * Frequency limits are not hard coded on the lib, so you can stress your hardware to it's particular limit (_You can move usually from ~3kHz to ~225 MHz, far away from the 8kHz to 160 MHz limits from the datasheet_)
 * You has a way to verify the status of a particular clock (_Enabled/Disabled by the Si.clkOn[clk] var_)
 * From v0.5 and beyond we saved more than 1 kbyte of your precious firmware space due to the use of all integer math now (Worst induced error is below +/- 1 Hz)
 * Overclock, yes, you can move the limits upward up to ~250MHz (see the "OVERCLOCK" section below)
 * Improved the click noise algorithm to get even more click noise reduction (see Click noise free section below)
-* Fast frequency changes as part of the improved click noise algorithm (see Click noise free section below)
+* Fast frequency changes as part of the improved click noise algorithm (see Click noise free section below) & I2C writes in burst mode.
 
 ## How to use the lib ##
 
@@ -250,7 +252,13 @@ Again: You can't use CLK1 and CLK2 at the same time, as soon as you set one of t
 
 ## Author & contributors ##
 
-The only author is Pavel Milanes, CO7WT, a cuban amateur radio operator; reachable at pavelmc@gmail.com, Until now I have no contributors or sponsors.
+The main author is Pavel Milanes, CO7WT, a cuban amateur radio operator; reachable at pavelmc@gmail.com, Until now I have no contributors or sponsors.
+
+But I have received the contributions stated below:
+
+* @birdwes:
+  - I2C busrt mode
+  - Found & fixed a bug about freq calculations.
 
 ## Where to download the latest version? ##
 
