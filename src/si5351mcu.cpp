@@ -54,6 +54,12 @@
     // start I2C (wire) procedures
     Wire.begin();
 
+    // shut off the spread spectrum by default, DWaite contibuted code  
+    uint8_t regval;
+    regval = i2cRead(149);
+    regval &= ~0x80;  // set bit 7 LOW to turn OFF spread spectrum mode
+    i2cWrite(149, regval);
+
     // power off all the outputs
     off();
 }
